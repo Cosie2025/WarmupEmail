@@ -34,8 +34,8 @@ def main():
     recipients = load_emails("emails.csv")
 
     for user in recipients:
-        html = template.render(name=user["name"])
-        send_email(user["email"], "Hello from Entugo", html)
+        html = template.render()  # no name needed
+        send_email(user["email"], "Hello from SendGrid", html)
 
 if __name__ == "__main__":
     main()
