@@ -5,23 +5,30 @@ from sendgrid import SendGridAPIClient
 from sendgrid.helpers.mail import Mail
 from jinja2 import Template
 
-# Load env vars
 SENDGRID_API_KEY = os.environ.get("SENDGRID_API_KEY")
-SENDER_EMAIL = os.environ.get("SENDER_EMAIL")  # Should be warmup@entugo.in
+SENDER_EMAIL = os.environ.get("SENDER_EMAIL")
 
 app = Flask(__name__)
 
-# Load HTML template
+# Load the HTML email template
 def load_template():
-    with open("email_template.html", "r", encoding='utf-8') as f:
-        return Template(f.read())
+    try:
+        with open("email_template.html", "r", encoding='utf-8') as f:
+            return Template(f.read())
+    except Exception as e:
+        print(f"Error loading template: {e}")
+        return Template("<p>Template error</p>")
 
-# Load CSV email list
+# Load emails from CSV
 def load_emails():
-    with open("emails.csv", newline='') as csvfile:
-        return list(csv.DictReader(csvfile))
+    try:
+        with open("emails.csv", newline='') as csvfile:
+            return list(csv.DictReader(csvfile))
+    except Exception as e:
+        print(f"Error reading emails.csv: {e}")
+        return []
 
-# Send one email
+# Send email using SendGrid
 def send_email(to_email, subject, html_content):
     message = Mail(
         from_email=SENDER_EMAIL,
@@ -36,21 +43,30 @@ def send_email(to_email, subject, html_content):
     except Exception as e:
         print(f"❌ Error sending to {to_email}: {e}")
 
-# Root endpoint for health check
+# Root endpoint
 @app.route("/")
 def home():
     return "Entugo Mailer is Running"
 
-# POST endpoint to send emails
+# Endpoint to trigger bulk email send
 @app.route("/send", methods=["POST"])
 def trigger_send():
     template = load_template()
     recipients = load_emails()
+
+    print(f"📨 Loaded {len(recipients)} recipients from CSV")
+
     for user in recipients:
-        html = template.render()
-        send_email(user["email"], "Entugo Warmup - Email Campaign.", html)
+        email = user.get("email")
+        if email:
+            print(f"📧 Sending to: {email}")
+            html = template.render()
+            send_email(email, "Entugo Warmup - Email Campaign.", html)
+        else:
+            print("⚠️ Skipped a row due to missing email field")
+
     return jsonify({"status": "Emails sent"}), 200
 
-# Main entry point
+# Run the app (Render binds to 0.0.0.0:10000)
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=10000)
