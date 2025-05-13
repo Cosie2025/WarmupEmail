@@ -35,7 +35,7 @@ def main():
 
     for user in recipients:
         html = template.render()  # no name needed
-        send_email(user["email"], "Hello from SendGrid", html)
+        send_email(user["email"], "Entugo Warmup-Email Campaign", html)
 
 if __name__ == "__main__":
     main()
